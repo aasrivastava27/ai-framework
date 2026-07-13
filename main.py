@@ -1,19 +1,25 @@
-from llm.groq_client import groq_client
+from framework.framework import AIFramework
 
 
 def main():
 
-    print("=" * 50)
-    print(" AI Framework ")
-    print("=" * 50)
+    framework = AIFramework()
 
-    question = input("\nYou: ")
+    print("=" * 60)
+    print("Welcome to AI Framework")
+    print("=" * 60)
 
-    answer = groq_client.ask(question)
+    while True:
 
-    print("\nAssistant:\n")
+        question = input("\nYou: ")
 
-    print(answer)
+        if question.lower() in ["exit", "quit"]:
+            print("\nGoodbye!")
+            break
+
+        response = framework.process_request(question)
+
+        print(f"\nAssistant:\n{response}")
 
 
 if __name__ == "__main__":
