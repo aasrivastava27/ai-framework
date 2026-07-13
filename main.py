@@ -1,6 +1,5 @@
 from framework.framework import AIFramework
 
-
 def main():
 
     framework = AIFramework()

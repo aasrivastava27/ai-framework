@@ -1,4 +1,5 @@
 from llm.groq_client import groq_client
+from router.router import RequestRouter, Route
 
 
 class AIFramework:
@@ -10,19 +11,19 @@ class AIFramework:
 
     def __init__(self):
         self.llm = groq_client
+        self.router = RequestRouter()
 
     def process_request(self, question: str) -> str:
-        """
-        Process a user request.
 
-        For now, every request is sent directly to Groq.
-        Later this method will decide whether to use:
-        - RAG
-        - CrewAI
-        - MCP
-        - Memory
-        """
+        route = self.router.determine_route(question)
 
-        response = self.llm.ask(question)
+        if route == Route.LLM:
+            return self.llm.ask(question)
+        
+        elif route == Route.RAG:
+            pass
 
-        return response
+        elif route == Route.CREW:
+            pass
+
+        raise NotImplementedError(f"Route {route} is not implemented yet.")
