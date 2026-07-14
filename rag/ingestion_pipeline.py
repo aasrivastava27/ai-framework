@@ -1,6 +1,6 @@
-import os
 import faiss
 import pickle
+
 from dotenv import load_dotenv
 
 from llama_index.core import (
@@ -14,81 +14,123 @@ from llama_index.core.node_parser import SentenceSplitter
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.faiss import FaissVectorStore
 
-load_dotenv()
 
-# ---------------------------------------
-# Configure embedding model
-# ---------------------------------------
+class IngestionPipeline:
+    """
+    Handles the complete document ingestion process.
 
-Settings.embed_model = HuggingFaceEmbedding(
-    model_name="BAAI/bge-small-en-v1.5"
-)
+    Responsibilities:
+    - Load documents
+    - Chunk documents
+    - Build FAISS index
+    - Save index and metadata
+    """
 
-# ---------------------------------------
-# Load documents
-# ---------------------------------------
+    def __init__(self):
 
-print("Loading documents...\n")
+        load_dotenv()
 
-documents = SimpleDirectoryReader(
-    input_dir="docs",
-    required_exts=[".txt"]
-).load_data()
+        self.dimension = 384
+        self.documents = None
+        self.nodes = None
 
-print(f"Loaded {len(documents)} documents.\n")
+        self.configure_embedding_model()
 
-for i, doc in enumerate(documents):
-    print(f"Document {i+1}")
-    print(doc.metadata)
-    print(doc.text[:100])
-    print("-" * 60)
+    # -------------------------------------------------
+    # Configure Embedding Model
+    # -------------------------------------------------
 
-# ---------------------------------------
-# Chunk documents
-# ---------------------------------------
+    def configure_embedding_model(self):
 
-splitter = SentenceSplitter(
-    chunk_size=1000,
-    chunk_overlap=100
-)
+        Settings.embed_model = HuggingFaceEmbedding(
+            model_name="BAAI/bge-small-en-v1.5"
+        )
 
-nodes = splitter.get_nodes_from_documents(documents)
+    # -------------------------------------------------
+    # Load Documents
+    # -------------------------------------------------
 
-with open("nodes.pkl", "wb") as f:
-    pickle.dump(nodes, f)
+    def load_documents(self, input_dir):
 
-print(f"\nCreated {len(nodes)} chunks.\n")
+        print("\nLoading documents...\n")
 
-# ---------------------------------------
-# Create FAISS index
-# ---------------------------------------
+        self.documents = SimpleDirectoryReader(
+            input_dir=input_dir,
+            required_exts=[".txt"]
+        ).load_data()
 
-dimension = 384
+        print(f"Loaded {len(self.documents)} documents.\n")
 
-faiss_index = faiss.IndexFlatL2(dimension)
+        for i, doc in enumerate(self.documents):
 
-vector_store = FaissVectorStore(
-    faiss_index=faiss_index
-)
+            print(f"Document {i + 1}")
 
-storage_context = StorageContext.from_defaults(
-    vector_store=vector_store
-)
+            print(doc.metadata)
 
-index = VectorStoreIndex(
-    nodes,
-    storage_context=storage_context
-)
+            print(doc.text[:100])
 
-# ---------------------------------------
-# Persist storage
-# ---------------------------------------
+            print("-" * 60)
 
-storage_context.persist("storage")
+    # -------------------------------------------------
+    # Chunk Documents
+    # -------------------------------------------------
 
-faiss.write_index(
-    faiss_index,
-    "faiss.index"
-)
+    def chunk_documents(self):
 
-print("\nFAISS index successfully created.")
+        splitter = SentenceSplitter(
+            chunk_size=1000,
+            chunk_overlap=100
+        )
+
+        self.nodes = splitter.get_nodes_from_documents(
+            self.documents
+        )
+
+        with open("nodes.pkl", "wb") as f:
+            pickle.dump(self.nodes, f)
+
+        print(f"\nCreated {len(self.nodes)} chunks.\n")
+
+    # -------------------------------------------------
+    # Build FAISS Index
+    # -------------------------------------------------
+
+    def build_index(self):
+
+        faiss_index = faiss.IndexFlatL2(
+            self.dimension
+        )
+
+        vector_store = FaissVectorStore(
+            faiss_index=faiss_index
+        )
+
+        storage_context = StorageContext.from_defaults(
+            vector_store=vector_store
+        )
+
+        VectorStoreIndex(
+            self.nodes,
+            storage_context=storage_context
+        )
+
+        storage_context.persist("storage")
+
+        faiss.write_index(
+            faiss_index,
+            "faiss.index"
+        )
+
+        print("\nFAISS index successfully created.")
+
+    # -------------------------------------------------
+    # Public API
+    # -------------------------------------------------
+
+    def ingest(self, input_dir="docs"):
+
+        self.load_documents(input_dir)
+
+        self.chunk_documents()
+
+        self.build_index()

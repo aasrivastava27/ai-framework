@@ -1,11 +1,12 @@
-import asyncio
-import json
 import os
 import faiss
-from openai import OpenAI, BadRequestError
+import pickle
+import cohere
+
 from dotenv import load_dotenv
 
-from mcp_client import MCPToolBox
+load_dotenv("config/.env")
+from openai import OpenAI
 
 from llama_index.core import (
     StorageContext,
@@ -18,456 +19,515 @@ from llama_index.vector_stores.faiss import FaissVectorStore
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.vector_stores.types import VectorStoreQueryMode
 
-import pickle
-
-with open("nodes.pkl", "rb") as f:
-    all_nodes = pickle.load(f)
-
 from rank_bm25 import BM25Okapi
-tokenized_docs = []
-
-for node in all_nodes:
-    tokenized_docs.append(node.text.lower().split())
-
-bm25 = BM25Okapi(tokenized_docs)
-import cohere
-
-# ---------------------------------------
-# Load environment variables
-# ---------------------------------------
-
-load_dotenv()
-
-# ---------------------------------------
-# Initialize cohere client
-# ---------------------------------------
-co = cohere.Client(os.getenv("COHERE_API_KEY"))
-
-# ---------------------------------------
-# Configure embedding model
-# ---------------------------------------
-
-Settings.embed_model = HuggingFaceEmbedding(
-    model_name="BAAI/bge-small-en-v1.5"
-)
-
-# ---------------------------------------
-# Initialize GROQ client
-# ---------------------------------------
-
-client = OpenAI(
-    api_key=os.getenv("GROQ_API_KEY"),
-    base_url="https://api.groq.com/openai/v1"
-)
-
-# ---------------------------------------
-# Load FAISS index
-# ---------------------------------------
-
-faiss_index = faiss.read_index("faiss.index")
-
-vector_store = FaissVectorStore(
-    faiss_index=faiss_index
-)
-
-storage_context = StorageContext.from_defaults(
-    persist_dir="storage",
-    vector_store=vector_store
-)
-
-index = load_index_from_storage(storage_context)
-
-# ---------------------------------------
-# Create Retriever
-# ---------------------------------------
-
-retriever = VectorIndexRetriever(
-    index=index,
-    similarity_top_k=5,
-    vector_store_query_mode=VectorStoreQueryMode.MMR,
-    mmr_threshold=0.5
-)
-
-# ---------------------------------------
-# List available source files (so tool calls
-# don't have to guess filenames)
-# ---------------------------------------
-
-DOCS_DIR = "docs"
-available_files = sorted(os.listdir(DOCS_DIR))
-
-MAX_TOOL_ROUNDS = 5
 
 
-async def main():
+class RAG:
+    """
+    Complete Retrieval-Augmented Generation pipeline.
 
-    # ---------------------------------------
-    # Connect to MCP servers
-    # ---------------------------------------
+    Public API:
 
-    mcp_tools = MCPToolBox()
-    await mcp_tools.connect("mcp_config.json")
+        rag = RAG()
 
-    # ---------------------------------------
-    # Chat History
-    # ---------------------------------------
+        answer = rag.answer(
+            question,
+            chat_history
+        )
+    """
 
-    chat_history = []
+    def __init__(self):
 
-    try:
-        while True:
+        self.client = None
+        self.co = None
+        self.retriever = None
+        self.bm25 = None
+        self.all_nodes = None
 
-            query = input("\nQuestion (type 'quit' to exit): ")
+        self.model = "openai/gpt-oss-120b"
 
-            if query.lower() == "quit":
-                break
+        self.load_models()
 
-            # -------------------------------------------------
-            # Rewrite follow-up question into standalone query
-            # -------------------------------------------------
+    # -------------------------------------------------
+    # Load Models
+    # -------------------------------------------------
 
-            rewrite_prompt = f"""
-You are a query rewriting assistant.
+    def load_models(self):
 
-Conversation history:
-{chat_history}
+        load_dotenv()
 
-Latest user question:
-{query}
+        # ---------------------------------------
+        # Load Nodes
+        # ---------------------------------------
 
-Rewrite the latest question into a standalone question by resolving any references
-such as "it", "they", "that company", etc.
+        with open("rag/vectorstore/nodes.pkl", "rb") as f:
+            self.all_nodes = pickle.load(f)
 
-If the latest question is already standalone, return it unchanged.
+        # ---------------------------------------
+        # BM25
+        # ---------------------------------------
 
-Return ONLY the rewritten question.
-"""
+        tokenized_docs = []
 
-            rewrite_response = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
-                temperature=0,
-                max_tokens=100,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": rewrite_prompt
-                    }
-                ]
+        for node in self.all_nodes:
+            tokenized_docs.append(
+                node.text.lower().split()
             )
 
-            revised_query = rewrite_response.choices[0].message.content.strip()
+        self.bm25 = BM25Okapi(tokenized_docs)
 
-            print("\nStandalone Query:")
-            print(revised_query)
+        # ---------------------------------------
+        # Cohere
+        # ---------------------------------------
 
-            # -------------------------------------------------
-            # Generate Multiple Query Variations
-            # -------------------------------------------------
+        self.co = cohere.Client(
+            os.getenv("COHERE_API_KEY")
+        )
 
-            multi_query_prompt = f"""
-Generate 3 different search queries for the following question.
+        # ---------------------------------------
+        # Embedding Model
+        # ---------------------------------------
 
-The alternative queries should retrieve complementary information while preserving
-the original meaning.
+        Settings.embed_model = HuggingFaceEmbedding(
+            model_name="BAAI/bge-small-en-v1.5"
+        )
 
-Original Query:
-{revised_query}
+        # ---------------------------------------
+        # Groq Client
+        # ---------------------------------------
 
-Return ONLY the queries, one per line.
-"""
+        self.client = OpenAI(
+            api_key=os.getenv("GROQ_API_KEY"),
+            base_url="https://api.groq.com/openai/v1"
+        )
 
-            multi_query_response = client.chat.completions.create(
-                model="openai/gpt-oss-120b",
-                temperature=0,
-                max_tokens=150,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": multi_query_prompt
-                    }
-                ]
-            )
+        # ---------------------------------------
+        # FAISS
+        # ---------------------------------------
 
-            query_variations = [revised_query]
+        faiss_index = faiss.read_index("rag/vectorstore/faiss.index")
 
-            lines = multi_query_response.choices[0].message.content.split("\n")
+        vector_store = FaissVectorStore(
+            faiss_index=faiss_index
+        )
 
-            for q in lines:
-                if q.strip():
-                    cleaned_query = q.strip("-• ").strip()
-                    query_variations.append(cleaned_query)
+        storage_context = StorageContext.from_defaults(
+            persist_dir="rag/storage",
+            vector_store=vector_store
+        )
 
-            print("\nGenerated Queries")
-            print("-" * 70)
+        index = load_index_from_storage(
+            storage_context
+        )
 
-            for i, q in enumerate(query_variations, 1):
-                print(f"{i}. {q}")
+        # ---------------------------------------
+        # Retriever
+        # ---------------------------------------
 
-            # -------------------------------------------------
-            # Retrieve chunks for every query
-            # -------------------------------------------------
+        self.retriever = VectorIndexRetriever(
+            index=index,
+            similarity_top_k=5,
+            vector_store_query_mode=VectorStoreQueryMode.MMR,
+            mmr_threshold=0.5
+        )
 
-            all_contexts = []
-            for q in query_variations:
+    # -------------------------------------------------
+    # Call LLM
+    # -------------------------------------------------
 
-                # -------------------------
-                # FAISS Retrieval
-                # -------------------------
+    def call_llm(
+        self,
+        prompt,
+        temperature=0,
+        max_tokens=500
+    ):
 
-                nodes = retriever.retrieve(q)
+        response = self.client.chat.completions.create(
 
-                # -------------------------
-                # BM25 Retrieval
-                # -------------------------
+            model=self.model,
 
-                tokenized_query = q.lower().split()
+            temperature=temperature,
 
-                scores = bm25.get_scores(tokenized_query)
+            max_tokens=max_tokens,
 
-                # Find top 3 BM25 chunks
-
-                top_indices = []
-
-                temp_scores = scores.copy()
-
-                for _ in range(5):
-
-                    highest_score = -1
-                    highest_index = -1
-
-                    for i in range(len(temp_scores)):
-
-                        if temp_scores[i] > highest_score:
-                            highest_score = temp_scores[i]
-                            highest_index = i
-
-                    top_indices.append(highest_index)
-
-                    temp_scores[highest_index] = -1
-
-                bm25_nodes = []
-
-                for idx in top_indices:
-                    bm25_nodes.append(all_nodes[idx])
-
-                # -------------------------
-                # Store both FAISS and BM25 chunks
-                # -------------------------
-
-                query_context = []
-
-                # FAISS chunks
-                for node in nodes:
-                    query_context.append(node.text)
-
-                # BM25 chunks
-                for node in bm25_nodes:
-                    query_context.append(node.text)
-
-                all_contexts.append(query_context)
-
-            # -------------------------------------------------
-            # Reciprocal Rank Fusion
-            # -------------------------------------------------
-
-            rrf_scores = {}
-            unique_chunks = []
-
-            k = 60
-
-            # Calculate RRF scores
-            for query_context in all_contexts:
-
-                rank = 1
-
-                for chunk in query_context:
-
-                    # Store chunk only once
-                    if chunk not in unique_chunks:
-                        unique_chunks.append(chunk)
-
-                    # Initialize score if first time seen
-                    if chunk not in rrf_scores:
-                        rrf_scores[chunk] = 0
-
-                    # Add RRF score
-                    rrf_scores[chunk] = rrf_scores[chunk] + (1 / (k + rank))
-
-                    rank = rank + 1
-
-            # Sort chunks according to RRF score (highest first)
-
-            fused_chunks = unique_chunks.copy()
-
-            for i in range(len(fused_chunks)):
-                best = i
-
-                for j in range(i + 1, len(fused_chunks)):
-                    if rrf_scores[fused_chunks[j]] > rrf_scores[fused_chunks[best]]:
-                        best = j
-
-                fused_chunks[i], fused_chunks[best] = fused_chunks[best], fused_chunks[i]
-
-            print("\nChunks After Reciprocal Rank Fusion")
-            print("-" * 70)
-
-            for i in range(len(fused_chunks)):
-                chunk = fused_chunks[i]
-
-                print("\nChunk", i + 1)
-                print("Score:", round(rrf_scores[chunk], 5))
-                print(chunk[:250] + "...")
-
-            # -------------------------------------------------
-            # Cohere Reranking
-            # -------------------------------------------------
-
-            rerank_response = co.rerank(
-                model="rerank-v3.5",
-                query=revised_query,
-                documents=fused_chunks,
-                top_n=5
-            )
-
-            reranked_chunks = []
-
-            print("\nChunks After Cohere Reranking")
-            print("-" * 70)
-
-            for result in rerank_response.results:
-
-                chunk = fused_chunks[result.index]
-                reranked_chunks.append(chunk)
-
-                print(f"\nRelevance Score: {result.relevance_score:.4f}")
-                print(chunk[:250] + "...")
-
-            # -------------------------------------------------
-            # Build Prompt
-            # -------------------------------------------------
-
-            prompt = f"""
-You are an intelligent AI assistant.
-
-Primarily use the retrieved contexts below to answer the user's question.
-
-The contexts are grouped by search query.
-Different groups may contain overlapping or complementary information.
-
-If the retrieved contexts are not enough to answer the question, you may use
-the available tools to look up additional information (for example, reading
-a raw source file). Only do this when the retrieved contexts are insufficient.
-
-When calling a file tool, you MUST use one of these exact filenames (do not
-guess or invent a filename):
-{available_files}
-
-If the answer still cannot be found, reply:
-
-"I could not find the answer in the provided documents."
-
-Retrieved Contexts:
-{reranked_chunks}
-
-Original User Question:
-{query}
-"""
-
-            # -------------------------------------------------
-            # Generate Final Answer (agentic tool-calling loop)
-            # -------------------------------------------------
-
-            messages = [
+            messages=[
                 {
                     "role": "user",
                     "content": prompt
                 }
             ]
+        )
 
-            answer = "I could not produce a final answer within the tool-call limit."
+        return response.choices[0].message.content.strip()
 
-            for _ in range(MAX_TOOL_ROUNDS):
+    # -------------------------------------------------
+    # Rewrite Query
+    # -------------------------------------------------
 
-                try:
-                    response = client.chat.completions.create(
-                        model="openai/gpt-oss-120b",
-                        max_tokens=500,
-                        temperature=0,
-                        messages=messages,
-                        tools=mcp_tools.openai_tools or None
+    def rewrite_query(
+        self,
+        query,
+        chat_history
+    ):
+
+        rewrite_prompt = f"""
+    You are a query rewriting assistant.
+
+    Conversation history:
+    {chat_history}
+
+    Latest user question:
+    {query}
+
+    Rewrite the latest question into a standalone question by resolving any references
+    such as "it", "they", "that company", etc.
+
+    If the latest question is already standalone, return it unchanged.
+
+    Return ONLY the rewritten question.
+    """
+
+        revised_query = self.call_llm(
+            rewrite_prompt,
+            temperature=0,
+            max_tokens=100
+        )
+
+        print("\nStandalone Query:")
+        print(revised_query)
+
+        return revised_query
+
+    # -------------------------------------------------
+    # Generate Multiple Queries
+    # -------------------------------------------------
+
+    def generate_multi_queries(
+        self,
+        revised_query
+    ):
+
+        multi_query_prompt = f"""
+    Generate 3 different search queries for the following question.
+
+    The alternative queries should retrieve complementary information while preserving
+    the original meaning.
+
+    Original Query:
+    {revised_query}
+
+    Return ONLY the queries, one per line.
+    """
+
+        multi_query_response = self.call_llm(
+            multi_query_prompt,
+            temperature=0,
+            max_tokens=150
+        )
+
+        query_variations = [
+            revised_query
+        ]
+
+        for q in multi_query_response.split("\n"):
+
+            if q.strip():
+
+                cleaned_query = (
+                    q.strip("-• ").strip()
+                )
+
+                query_variations.append(
+                    cleaned_query
+                )
+
+        print("\nGenerated Queries")
+        print("-" * 70)
+
+        for i, q in enumerate(query_variations, 1):
+            print(f"{i}. {q}")
+
+        return query_variations
+
+    # -------------------------------------------------
+    # Retrieve Chunks
+    # -------------------------------------------------
+
+    def retrieve_chunks(
+        self,
+        query_variations
+    ):
+
+        all_contexts = []
+
+        for q in query_variations:
+
+            # -------------------------
+            # FAISS Retrieval
+            # -------------------------
+
+            nodes = self.retriever.retrieve(q)
+
+            # -------------------------
+            # BM25 Retrieval
+            # -------------------------
+
+            tokenized_query = q.lower().split()
+
+            scores = self.bm25.get_scores(
+                tokenized_query
+            )
+
+            # Find Top 5 BM25 Results
+
+            top_indices = []
+
+            temp_scores = scores.copy()
+
+            for _ in range(5):
+
+                highest_score = -1
+                highest_index = -1
+
+                for i in range(len(temp_scores)):
+
+                    if temp_scores[i] > highest_score:
+
+                        highest_score = temp_scores[i]
+                        highest_index = i
+
+                top_indices.append(
+                    highest_index
+                )
+
+                temp_scores[highest_index] = -1
+
+            bm25_nodes = []
+
+            for idx in top_indices:
+
+                bm25_nodes.append(
+                    self.all_nodes[idx]
+                )
+
+            query_context = []
+
+            # FAISS
+
+            for node in nodes:
+
+                query_context.append(
+                    node.text
+                )
+
+            # BM25
+
+            for node in bm25_nodes:
+
+                query_context.append(
+                    node.text
+                )
+
+            all_contexts.append(
+                query_context
+            )
+
+        return all_contexts
+    # -------------------------------------------------
+    # Rerank Chunks
+    # -------------------------------------------------
+
+    def rerank_chunks(
+        self,
+        revised_query,
+        all_contexts
+    ):
+
+        rrf_scores = {}
+
+        unique_chunks = []
+
+        k = 60
+
+        # ---------------------------------------
+        # Reciprocal Rank Fusion
+        # ---------------------------------------
+
+        for query_context in all_contexts:
+
+            rank = 1
+
+            for chunk in query_context:
+
+                if chunk not in unique_chunks:
+
+                    unique_chunks.append(
+                        chunk
                     )
-                except BadRequestError as e:
-                    print(f"\n[MCP] Tool call generation failed ({e}); "
-                          f"answering from retrieved context only.")
 
-                    fallback_response = client.chat.completions.create(
-                        model="openai/gpt-oss-120b",
-                        max_tokens=500,
-                        temperature=0,
-                        messages=[{"role": "user", "content": prompt}]
-                    )
+                if chunk not in rrf_scores:
 
-                    answer = fallback_response.choices[0].message.content
-                    break
+                    rrf_scores[chunk] = 0
 
-                response_message = response.choices[0].message
+                rrf_scores[chunk] += (
+                    1 / (k + rank)
+                )
 
-                if not response_message.tool_calls:
-                    answer = response_message.content
-                    break
+                rank += 1
 
-                messages.append({
-                    "role": "assistant",
-                    "content": response_message.content,
-                    "tool_calls": [
-                        tool_call.model_dump()
-                        for tool_call in response_message.tool_calls
-                    ]
-                })
+        fused_chunks = unique_chunks.copy()
 
-                for tool_call in response_message.tool_calls:
+        for i in range(len(fused_chunks)):
 
-                    try:
-                        tool_args = json.loads(tool_call.function.arguments)
+            best = i
 
-                        print(f"\n[MCP] Calling tool: {tool_call.function.name}({tool_args})")
+            for j in range(i + 1, len(fused_chunks)):
 
-                        tool_result = await mcp_tools.call_tool(
-                            tool_call.function.name,
-                            tool_args
-                        )
-                    except Exception as e:
-                        tool_result = f"Tool call failed: {e}"
-                        print(f"\n[MCP] {tool_result}")
+                if (
+                    rrf_scores[fused_chunks[j]]
+                    >
+                    rrf_scores[fused_chunks[best]]
+                ):
 
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "content": tool_result
-                    })
+                    best = j
 
-            # -------------------------------------------------
-            # Save Chat History
-            # -------------------------------------------------
+            fused_chunks[i], fused_chunks[best] = (
+                fused_chunks[best],
+                fused_chunks[i]
+            )
 
-            chat_history.append({
-                "question": query,
-                "answer": answer
-            })
+        print("\nChunks After Reciprocal Rank Fusion")
+        print("-" * 70)
 
-            # -------------------------------------------------
-            # Print Final Answer
-            # -------------------------------------------------
+        for i, chunk in enumerate(fused_chunks, 1):
 
-            print("\n")
-            print("=" * 70)
-            print("Final Answer")
-            print("=" * 70)
-            print(answer)
+            print(f"\nChunk {i}")
 
-    finally:
-        await mcp_tools.close()
+            print(
+                "Score:",
+                round(rrf_scores[chunk], 5)
+            )
 
+            print(chunk[:250] + "...")
 
-if __name__ == "__main__":
-    asyncio.run(main())
+        # ---------------------------------------
+        # Cohere Reranking
+        # ---------------------------------------
+
+        rerank_response = self.co.rerank(
+
+            model="rerank-v3.5",
+
+            query=revised_query,
+
+            documents=fused_chunks,
+
+            top_n=5
+        )
+
+        reranked_chunks = []
+
+        print("\nChunks After Cohere Reranking")
+        print("-" * 70)
+
+        for result in rerank_response.results:
+
+            chunk = fused_chunks[result.index]
+
+            reranked_chunks.append(
+                chunk
+            )
+
+            print(
+                f"\nRelevance Score: "
+                f"{result.relevance_score:.4f}"
+            )
+
+            print(chunk[:250] + "...")
+
+        return reranked_chunks
+    # -------------------------------------------------
+    # Build Prompt
+    # -------------------------------------------------
+
+    def build_prompt(
+        self,
+        query,
+        reranked_chunks
+    ):
+
+        prompt = f"""
+You are an intelligent AI assistant.
+
+Answer the user's question ONLY using the retrieved context below.
+
+If the retrieved context does not contain enough information to answer the
+question, simply reply:
+
+"I could not find the answer in the provided documents."
+
+Retrieved Context:
+
+{reranked_chunks}
+
+User Question:
+
+{query}
+"""
+
+        return prompt
+    # -------------------------------------------------
+    # Generate Final Answer
+    # -------------------------------------------------
+
+    def generate_answer(
+        self,
+        prompt
+    ):
+
+        answer = self.call_llm(
+            prompt=prompt,
+            temperature=0,
+            max_tokens=500
+        )
+
+        return answer
+
+    # -------------------------------------------------
+    # Public API
+    # -------------------------------------------------
+
+    def answer(
+        self,
+        question,
+        chat_history
+    ):
+
+        revised_query = self.rewrite_query(
+            query=question,
+            chat_history=chat_history
+        )
+
+        query_variations = self.generate_multi_queries(
+            revised_query
+        )
+
+        all_contexts = self.retrieve_chunks(
+            query_variations
+        )
+
+        reranked_chunks = self.rerank_chunks(
+            revised_query,
+            all_contexts
+        )
+
+        prompt = self.build_prompt(
+            query=question,
+            reranked_chunks=reranked_chunks
+        )
+
+        answer = self.generate_answer(
+            prompt
+        )
+
+        return answer
