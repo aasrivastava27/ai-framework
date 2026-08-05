@@ -14,6 +14,6 @@ class Settings:
     MODEL_NAME = os.getenv("MODEL_NAME")
     TEMPERATURE = float(os.getenv("TEMPERATURE", 0))
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", 1024))
-
+    GOOGLE_EMAIL = os.getenv("GOOGLE_EMAIL")
 
 settings = Settings()

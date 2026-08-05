@@ -1,0 +1,37 @@
+MESSAGE IDS:
+[{'message_id': '19fb722fd0e98b2f', 'thread_id': '19fb722fd0e98b2f'}, {'message_id': '19fb719dbd34ac25', 'thread_id': '19fb719dbd34ac25'}, {'message_id': '19fb712f90ca0eba', 'thread_id': '19fb712f90ca0eba'}, {'message_id': '19fb6e55c22e9118', 'thread_id': '19fb609a55aa8eec'}, {'message_id': '19fb6b2036c06e95', 'thread_id': '19fb6b2036c06e95'}, {'message_id': '19fb67de40285eff', 'thread_id': '19fb67de40285eff'}, {'message_id': '19fb6778209218b4', 'thread_id': '19fb6778209218b4'}, {'message_id': '19fb6368b7cc4120', 'thread_id': '19fb6368b7cc4120'}, {'message_id': '19fb609a55aa8eec', 'thread_id': '19fb609a55aa8eec'}, {'message_id': '19fb5dd39243d32b', 'thread_id': '19fb5dd39243d32b'}]
+<class 'fastmcp.client.client.CallToolResult'>
+['__annotations__', '__class__', '__dataclass_fields__', '__dataclass_params__', '__delattr__', '__dict__', '__dir__', '__doc__', '__eq__', '__firstlineno__', '__format__', '__ge__', '__getattribute__', '__getstate__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__match_args__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__replace__', '__repr__', '__setattr__', '__sizeof__', '__static_attributes__', '__str__', '__subclasshook__', '__weakref__', 'content', 'data', 'is_error', 'meta', 'structured_content']
+<class 'dict'>
+{'subject': 'AtCoder Beginner Contest 469 Announcement', 'from': 'AtCoder System Mail <noreply@atcoder.jp>', 'date': 'Fri, 31 Jul 2026 07:45:50 +0000', 'body': 'We will hold AtCoder Beginner Contest 469.\r\n \r\n- Contest URL: https://atcoder.jp/contests/abc469\r\n- Start Time: http://www.timeanddate.com/worldclock/fixedtime.html?iso=20260801T2100&p1=248\r\n- Duration: 100 minutes\r\n- Writer: vwxyz, cn449\r\n- Tester: sounansya, sheyasutaka, harurun4635\r\n- Rated range: ~ 1999\r\n- The point values: 100-200-300-400-475-500-575\r\n\r\nWe are looking forward to your participation!\r\n\r\n- How to Unsubscribe Email Newsletters\r\n1: First, please sign in => https://atcoder.jp/login\r\n2: Clear all "Notification settings" from => https://atcoder.jp/settings\r\n\r\n-----\r\nAtCoder Development Team\r\nhttps://atcoder.jp/\r\n\r\n-----\r\nこのメールの配信を停止されたい場合は、以下のリンクをクリックしてください。\r\nIf you wish to unsubscribe from this mailing list, please click the link below.\r\n\r\n購読解除 / Unsubscribe: https://atcoder.jp/mail/unsubscribe?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyU2NyZWVuTmFtZSI6ImFhc2h1MjciLCJtYWlsVHlwZSI6MiwiaXNzIjoiYXRjb2Rlci5qcCIsImV4cCI6MTc4ODE2MjI4OX0.vZbq5bfo0KeWuTpRJKYm36EBKcoh3hKHhWoE8J4Cdk0'}
+
+EMAIL CONTENT:
+Subject: AtCoder Beginner Contest 469 Announcement
+From: AtCoder System Mail <noreply@atcoder.jp>
+Date: Fri, 31 Jul 2026 07:45:50 +0000
+
+We will hold AtCoder Beginner Contest 469.
+ 
+- Contest URL: https://atcoder.jp/contests/abc469
+- Start Time: http://www.timeanddate.com/worldclock/fixedtime.html?iso=20260801T2100&p1=248
+- Duration: 100 minutes
+- Writer: vwxyz, cn449
+- Tester: sounansya, sheyasutaka, harurun4635
+- Rated range: ~ 1999
+- The point values: 100-200-300-400-475-500-575
+
+We are looking forward to your participation!
+
+- How to Unsubscribe Email Newsletters
+1: First, please sign in => https://atcoder.jp/login
+2: Clear all "Notification settings" from => https://atcoder.jp/settings
+
+-----
+AtCoder Development Team
+https://atcoder.jp/
+
+-----
+このメールの配信を停止されたい場合は、以下のリンクをクリックしてください。
+If you wish to unsubscribe from this mailing list, please click the link below.
+
+購読解除 / Unsubscribe: https://atcoder.jp/mail/unsubscribe?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyU2NyZWVuTmFtZSI6ImFhc2h1MjciLCJtYWlsVHlwZSI6MiwiaXNzIjoiYXRjb2Rlci5qcCIsImV4cCI6MTc4ODE2MjI4OX0.vZbq5bfo0KeWuTpRJKYm36EBKcoh3hKHhWoE8J4Cdk0

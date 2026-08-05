@@ -4,6 +4,10 @@ def main():
 
     framework = AIFramework()
 
+    framework.google_email = input(
+        "Enter your Google email: "
+    ).strip()
+
     print("=" * 60)
     print("Welcome to AI Framework")
     print("=" * 60)
