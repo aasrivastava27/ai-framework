@@ -3,6 +3,8 @@ from groq import Groq
 from config.settings import settings
 from prompts.router_prompt import ROUTER_SYSTEM_PROMPT
 
+from prompts.router_prompt import ROUTER_SYSTEM_PROMPT
+from prompts.router_prompt import WORKSPACE_ROUTER_SYSTEM_PROMPT
 
 class GroqClient:
 
@@ -62,5 +64,22 @@ class GroqClient:
 
         return self._chat(messages)
 
+    def classify_workspace_route(self, question: str) -> str:
+        """
+        Ask the LLM which Google Workspace service should handle the request.
+        """
+
+        messages = [
+            {
+                "role": "system",
+                "content": WORKSPACE_ROUTER_SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": question
+            }
+        ]
+
+        return self._chat(messages)
 
 groq_client = GroqClient()

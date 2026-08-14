@@ -3,55 +3,70 @@ from crewai import Task
 
 class TaskFactory:
     """
-    Creates CrewAI tasks based on the user's intent.
+    Creates CrewAI tasks for Google Workspace requests.
     """
 
     @staticmethod
-    def create_email_search_task(agent, user_prompt: str, google_email: str):
-        """
-        Task for handling Gmail-related requests.
-        The agent is free to use any Gmail tools it has available.
-        """
-
+    def create_workspace_task(
+        agent,
+        user_prompt: str,
+        google_email: str,
+    ):
         return Task(
             description=f"""
-                The user's Google email is:
+User email: {google_email}
 
-                {google_email}
+User request:
+{user_prompt}
 
-                User request:
+Rules:
+- Use Workspace tools when the request requires Gmail or Calendar data/action.
+- Never invent information.
+- Never claim an action succeeded unless the tool confirms it.
+- Use the user's email whenever required.
+- Use only the tools necessary for the request.
 
-                {user_prompt}
+Gmail:
+- Read emails: Search Gmail -> Get Email Content.
+- Send emails: Send Gmail Message.
 
-                You have three Gmail tools:
+Calendar:
 
-                1. Search Gmail
-                2. Get Gmail Messages
-                3. Send Gmail Message
+- Use Calendar tools for Calendar requests.
+- Default calendar: primary.
 
-                Rules:
+- If the user provides an explicit date such as
+  "August 14, 2026" or "Friday, August 14",
+  DO NOT use Get Current Date and Time.
 
-                - For reading emails:
-                    Search -> Read -> Answer
+- Only use Get Current Date and Time when the user uses a
+  relative date such as:
+  "today", "tomorrow", "yesterday", "this week", or "next week".
 
-                - For sending emails:
-                    Use Send Gmail Message.
+- For an update with an event ID, update directly.
 
-                - Never invent email contents.
+- If the user does not provide an event ID:
+  1. Use Get Calendar Events to find the event.
+  2. Use the event title and the user's specified date/time range.
+  3. Obtain the event ID from the result.
+  4. Use Update Calendar Event with that event ID.
 
-                - Never claim an email was sent unless the tool succeeds.
+- If the user asks only to rename an event:
+  update ONLY the event title.
 
-                - If the user didn't provide a subject,
-                generate a short natural one.
+- If the user says not to change the date or time:
+  DO NOT provide start_time or end_time to Update Calendar Event.
 
-                Always use the appropriate tool.
-                """,
+- Never invent an event ID.
 
-                expected_output="""
-                    A complete response answering the user's Gmail request.
-                    Include email details only if necessary.
-                    """,
-                
-                agent=agent,
+- Never claim the update succeeded unless
+  Update Calendar Event confirms success.
+""",
 
-            )
+            expected_output=(
+                "Give a concise final answer based only on actual tool results. "
+                "Confirm successful actions only when the tool confirms success."
+            ),
+
+            agent=agent,
+        )

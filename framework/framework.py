@@ -34,8 +34,13 @@ class AIFramework:
             )
         elif route == Route.CREW:
             print("[DEBUG] Entering CREW branch")
+
+            workspace_route = self.router.determine_workspace_route(question)
+
+            print(f"[DEBUG] Selected Workspace Route: {workspace_route}")
+
             return self.crew.run(
-                route="gmail",
+                route=workspace_route.value,
                 question=question,
                 google_email=self.google_email,
             )

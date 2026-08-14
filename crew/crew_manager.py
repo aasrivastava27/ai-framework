@@ -1,13 +1,16 @@
 from crewai import Crew, Process
 from enum import Enum
+
 from crew.agent_factory import AgentFactory
 from crew.task_factory import TaskFactory
+
 
 class Route(Enum):
     GMAIL = "gmail"
     CALENDAR = "calendar"
     DRIVE = "drive"
     DOCS = "docs"
+
 
 class CrewManager:
     """
@@ -23,27 +26,27 @@ class CrewManager:
 
         route = Route(route.lower())
 
-        if route == Route.GMAIL:
-            return self._run_gmail(question, google_email)
+        if route == Route.CALENDAR:
+            return self._run_calendar(question, google_email)
 
-        elif route == Route.CALENDAR:
-            return self._run_calendar(question)
+        elif route == Route.GMAIL:
+            return self._run_gmail(question, google_email)
 
         else:
             raise ValueError(f"Unsupported crew route: {route}")
 
     # ---------------------------------------------------------
-    # Gmail
+    # Calendar
     # ---------------------------------------------------------
 
-    def _run_gmail(self, question: str, google_email):
+    def _run_calendar(self, question: str, google_email: str):
 
-        agent = self.agent_factory.create_email_agent(google_email)
+        agent = self.agent_factory.create_calendar_agent()
 
-        task = self.task_factory.create_email_search_task(
+        task = self.task_factory.create_workspace_task(
             agent=agent,
             user_prompt=question,
-            google_email=google_email
+            google_email=google_email,
         )
 
         crew = Crew(
@@ -56,14 +59,14 @@ class CrewManager:
         return str(crew.kickoff())
 
     # ---------------------------------------------------------
-    # Calendar
+    # Gmail
     # ---------------------------------------------------------
 
-    def _run_calendar(self, question: str, google_email: str):
+    def _run_gmail(self, question: str, google_email: str):
 
-        agent = self.agent_factory.create_calendar_agent()
+        agent = self.agent_factory.create_gmail_agent()
 
-        task = self.task_factory.create_calendar_task(
+        task = self.task_factory.create_workspace_task(
             agent=agent,
             user_prompt=question,
             google_email=google_email,

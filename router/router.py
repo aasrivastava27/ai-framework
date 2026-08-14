@@ -9,6 +9,13 @@ class Route(Enum):
     CREW = "crew"
 
 
+class WorkspaceRoute(Enum):
+    GMAIL = "gmail"
+    CALENDAR = "calendar"
+    DRIVE = "drive"
+    DOCS = "docs"
+
+
 class RequestRouter:
 
     def __init__(self):
@@ -25,4 +32,16 @@ class RequestRouter:
         }
 
         return valid_routes.get(route, Route.LLM)
-        #return Route.CREW
+
+    def determine_workspace_route(self, question: str) -> WorkspaceRoute:
+
+        route = self.llm.classify_workspace_route(question)
+
+        valid_routes = {
+            "GMAIL": WorkspaceRoute.GMAIL,
+            "CALENDAR": WorkspaceRoute.CALENDAR,
+            "DRIVE": WorkspaceRoute.DRIVE,
+            "DOCS": WorkspaceRoute.DOCS,
+        }
+
+        return valid_routes.get(route, WorkspaceRoute.GMAIL)
