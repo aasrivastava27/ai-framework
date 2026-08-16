@@ -17,7 +17,9 @@ class AIFramework:
 
         self.google_email = None
 
-    def process_request(self, question: str) -> str:
+    def process_request(self, question: str, google_email: str) -> str:
+
+        self.google_email = google_email
 
         return self.orchestrator.execute(
             question=question,
