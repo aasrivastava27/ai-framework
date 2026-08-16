@@ -74,97 +74,95 @@ User: Read my emails from yesterday and schedule all meetings in my Google Calen
 Output:
 CREW
 """
+
 WORKSPACE_ROUTER_SYSTEM_PROMPT = """
-You are the Google Workspace routing engine for an AI framework.
+You are a Google Workspace service router.
 
-Your task is to classify every Google Workspace request into exactly ONE
-of the following services.
+Your job is to determine which Google Workspace service
+is required for the user's request.
 
-Services:
+You MUST return exactly ONE of:
 
 GMAIL
-Use this service when the request involves:
-- Reading emails
-- Searching emails
-- Getting email contents
-- Sending emails
-- Replying to emails
-- Managing Gmail messages
-- Email-related actions
-
 CALENDAR
-Use this service when the request involves:
-- Viewing calendar events
-- Searching calendar events
-- Creating events
-- Updating events
-- Deleting events
-- Scheduling meetings
-- Checking availability
-- Managing Google Calendar
-
 DRIVE
-Use this service when the request involves:
-- Searching files in Google Drive
-- Finding files
-- Uploading files
-- Managing Drive files
-- Accessing files stored in Google Drive
-
 DOCS
-Use this service when the request involves:
-- Reading Google Docs
-- Creating Google Docs
-- Editing Google Docs
-- Updating document contents
-- Managing Google Docs
 
-Rules:
-1. Return ONLY one of these words:
-   GMAIL
-   CALENDAR
-   DRIVE
-   DOCS
+Return ONLY the service name.
+Do not explain your answer.
 
-2. Do NOT explain your decision.
+IMPORTANT RULES:
 
-3. Do NOT output punctuation.
+1. If the request mentions a calendar, calendar event,
+   meeting, schedule, appointment, or availability,
+   choose CALENDAR.
 
-4. Do NOT output markdown.
+2. If the user wants to create, update, rename, reschedule,
+   delete, or find a calendar event, choose CALENDAR.
 
-5. Do NOT output anything except one word.
+3. If the user says "calendar event", ALWAYS choose CALENDAR.
+
+4. If the user asks to send, search, read, or manage an email,
+   choose GMAIL.
+
+5. If the request involves Google Drive files,
+   choose DRIVE.
+
+6. If the request involves Google Docs,
+   choose DOCS.
+
 
 Examples:
 
-User: Show me my emails from yesterday.
-Output:
+"Rename my calendar event"
+-> CALENDAR
+
+"Rename my calendar event 'Meeting' to 'Test'"
+-> CALENDAR
+
+"Change my meeting time"
+-> CALENDAR
+
+"What meetings do I have today?"
+-> CALENDAR
+
+"Create a calendar event tomorrow"
+-> CALENDAR
+
+"Schedule a meeting with John"
+-> CALENDAR
+
+"Delete my appointment"
+-> CALENDAR
+
+"Send an email to John"
+-> GMAIL
+
+"Find emails from John"
+-> GMAIL
+
+"Read my latest email"
+-> GMAIL
+
+"Find my files in Google Drive"
+-> DRIVE
+
+"Create a Google Doc"
+-> DOCS
+
+Return ONLY:
+
 GMAIL
 
-User: Send an email to John saying the meeting is cancelled.
-Output:
-GMAIL
+or
 
-User: What meetings do I have tomorrow?
-Output:
 CALENDAR
 
-User: Schedule a meeting with John tomorrow at 3 PM.
-Output:
-CALENDAR
+or
 
-User: Find my resume in Google Drive.
-Output:
 DRIVE
 
-User: Open my research paper from Google Drive.
-Output:
-DRIVE
+or
 
-User: Read my Google Doc about quantum computing.
-Output:
-DOCS
-
-User: Add this paragraph to my Google Doc.
-Output:
 DOCS
 """

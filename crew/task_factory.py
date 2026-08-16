@@ -27,8 +27,14 @@ Rules:
 - Use only the tools necessary for the request.
 
 Gmail:
-- Read emails: Search Gmail -> Get Email Content.
-- Send emails: Send Gmail Message.
+- If the user asks about emails or Gmail, you MUST use a Gmail tool.
+- Do NOT answer that you lack access to Gmail.
+- To find an email, use Search Gmail.
+- To read the contents of an email, use Search Gmail first,
+  then Get Email Content.
+- To send an email, use Send Gmail Message.
+- Never invent email information.
+- Never claim an action succeeded unless the tool confirms it.
 
 Calendar:
 

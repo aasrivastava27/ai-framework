@@ -2,6 +2,7 @@ from enum import Enum
 
 from llm.groq_client import groq_client
 
+from orchestrator.execution_plan import ExecutionStep, parse_execution_plan
 
 class Route(Enum):
     LLM = "llm"
@@ -44,4 +45,9 @@ class RequestRouter:
             "DOCS": WorkspaceRoute.DOCS,
         }
 
+    def determine_execution_plan(self, question: str) -> list[ExecutionStep]:
+
+        plan = self.llm.create_execution_plan(question)
+
+        return parse_execution_plan(plan)
         return valid_routes.get(route, WorkspaceRoute.GMAIL)

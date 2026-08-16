@@ -20,7 +20,7 @@ from crew.tools.time_tools import CurrentDateTimeTool
 
 
 llm = LLM(
-    model="gemini/gemini-3.6-flash",
+    model="gemini/gemini-3.5-flash-lite",
     api_key=settings.GEMINI_API_KEY,
     max_tokens=1000,
 )
@@ -70,8 +70,22 @@ class AgentFactory:
             ),
 
             backstory=(
-                "You are a Gmail assistant. "
-                "Use only the Gmail tools necessary for the request. "
+                "You are a Gmail assistant with access to the user's Gmail "
+                "through the provided Gmail tools. "
+
+                "When the user asks about their emails, inbox, messages, "
+                "senders, subjects, email contents, or sending an email, "
+                "you MUST use the appropriate Gmail tool. "
+
+                "Do NOT tell the user that you lack access to Gmail. "
+                "The Gmail tools provide the required access. "
+
+                "For reading an email, first use Search Gmail to find the "
+                "relevant email, then use Get Email Content when the actual "
+                "email contents are required. "
+
+                "For sending an email, use Send Gmail Message. "
+
                 "Never invent information or claim an action succeeded "
                 "without tool confirmation."
             ),
