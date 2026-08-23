@@ -1,5 +1,8 @@
-import faiss
+import os
 import pickle
+from pathlib import Path
+
+import faiss
 
 from dotenv import load_dotenv
 
@@ -19,11 +22,37 @@ class IngestionPipeline:
     """
     Handles the complete document ingestion process.
 
+    Each user's documents and vector store are kept separate.
+
+    Directory structure:
+
+        rag/
+        ├── docs/
+        │   ├── user1@gmail.com/
+        │   │   ├── document1.txt
+        │   │   └── document2.txt
+        │   │
+        │   └── user2@gmail.com/
+        │       └── document1.txt
+        │
+        ├── vectorstore/
+        │   ├── user1@gmail.com/
+        │   │   ├── nodes.pkl
+        │   │   └── faiss.index
+        │   │
+        │   └── user2@gmail.com/
+        │       ├── nodes.pkl
+        │       └── faiss.index
+        │
+        └── storage/
+            ├── user1@gmail.com/
+            └── user2@gmail.com/
+
     Responsibilities:
-    - Load documents
+    - Load documents for one user
     - Chunk documents
     - Build FAISS index
-    - Save index and metadata
+    - Save user-specific index and metadata
     """
 
     def __init__(self):
@@ -31,8 +60,15 @@ class IngestionPipeline:
         load_dotenv()
 
         self.dimension = 384
+
         self.documents = None
         self.nodes = None
+
+        self.user_google_email = None
+
+        self.docs_dir = None
+        self.vectorstore_dir = None
+        self.storage_dir = None
 
         self.configure_embedding_model()
 
@@ -47,19 +83,87 @@ class IngestionPipeline:
         )
 
     # -------------------------------------------------
+    # Configure User Directories
+    # -------------------------------------------------
+
+    def configure_user_directories(
+        self,
+        user_google_email: str
+    ):
+
+        self.user_google_email = user_google_email.strip().lower()
+
+        project_root = Path(__file__).resolve().parent.parent
+
+        # -------------------------------------------------
+        # User documents
+        # -------------------------------------------------
+
+        self.docs_dir = (
+            project_root
+            / "rag"
+            / "docs"
+            / self.user_google_email
+        )
+
+        # -------------------------------------------------
+        # User vector store
+        # -------------------------------------------------
+
+        self.vectorstore_dir = (
+            project_root
+            / "rag"
+            / "vectorstore"
+            / self.user_google_email
+        )
+
+        # -------------------------------------------------
+        # User LlamaIndex storage
+        # -------------------------------------------------
+
+        self.storage_dir = (
+            project_root
+            / "rag"
+            / "storage"
+            / self.user_google_email
+        )
+
+        # Create directories if they don't exist.
+
+        self.docs_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        self.vectorstore_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        self.storage_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+    # -------------------------------------------------
     # Load Documents
     # -------------------------------------------------
 
-    def load_documents(self, input_dir):
+    def load_documents(self):
 
-        print("\nLoading documents...\n")
+        print(
+            f"\nLoading documents for "
+            f"{self.user_google_email}...\n"
+        )
 
         self.documents = SimpleDirectoryReader(
-            input_dir=input_dir,
+            input_dir=str(self.docs_dir),
             required_exts=[".txt"]
         ).load_data()
 
-        print(f"Loaded {len(self.documents)} documents.\n")
+        print(
+            f"Loaded {len(self.documents)} documents.\n"
+        )
 
         for i, doc in enumerate(self.documents):
 
@@ -86,10 +190,24 @@ class IngestionPipeline:
             self.documents
         )
 
-        with open("nodes.pkl", "wb") as f:
-            pickle.dump(self.nodes, f)
+        nodes_path = (
+            self.vectorstore_dir
+            / "nodes.pkl"
+        )
 
-        print(f"\nCreated {len(self.nodes)} chunks.\n")
+        with open(
+            nodes_path,
+            "wb"
+        ) as f:
+
+            pickle.dump(
+                self.nodes,
+                f
+            )
+
+        print(
+            f"\nCreated {len(self.nodes)} chunks."
+        )
 
     # -------------------------------------------------
     # Build FAISS Index
@@ -114,23 +232,58 @@ class IngestionPipeline:
             storage_context=storage_context
         )
 
-        storage_context.persist("storage")
+        # -------------------------------------------------
+        # Persist LlamaIndex storage
+        # -------------------------------------------------
+
+        storage_context.persist(
+            persist_dir=str(
+                self.storage_dir
+            )
+        )
+
+        # -------------------------------------------------
+        # Save FAISS index
+        # -------------------------------------------------
+
+        faiss_path = (
+            self.vectorstore_dir
+            / "faiss.index"
+        )
 
         faiss.write_index(
             faiss_index,
-            "faiss.index"
+            str(faiss_path)
         )
 
-        print("\nFAISS index successfully created.")
+        print(
+            f"\nFAISS index successfully created "
+            f"for {self.user_google_email}."
+        )
 
     # -------------------------------------------------
     # Public API
     # -------------------------------------------------
 
-    def ingest(self, input_dir="docs"):
+    def ingest(
+        self,
+        user_google_email: str
+    ):
 
-        self.load_documents(input_dir)
+        # Configure all paths for this user.
+
+        self.configure_user_directories(
+            user_google_email
+        )
+
+        # Load only this user's documents.
+
+        self.load_documents()
+
+        # Chunk only this user's documents.
 
         self.chunk_documents()
+
+        # Build only this user's FAISS index.
 
         self.build_index()

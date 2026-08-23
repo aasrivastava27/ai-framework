@@ -1,0 +1,69 @@
+AASHUTOSH SRIVASTAVA 
+aasrivastava@ucsd.edu | +1 858 257 7152 | LinkedIn 
+Full-Time BS Student (Sophomore), University of California, San Diego (UCSD) 
+SUMMARY 
+ 
+Skilled software engineer with strong full-stack experience. Built applications across Python, C, C#, and React, did an AI Engineering 
+internship and delivered projects like ClubLens and Unity games. Excelled in designing reliable, scalable systems with strong analytical 
+and problem-solving ability. 
+EDUCATION 
+ 
+University of California, San Diego, California, Class of June 2029 
+Bachelor of Science in Computer Science 
+GPA – 3.845 
+Coursework: 
+Advance Data Structures and Algorithms, CS and OOP Accelerated, Discrete Math for CS, System Programming and Software Tools 
+CLUBS 
+ 
+o 
+ACM AI: Learned and built a sign-language detector (computer vision project). 
+Summer 2026 
+o 
+CSES Cohorts: Learned UI and backend development. 
+Fall 2025 
+SKILLS 
+ 
+Languages: Python, Java, C, C#, JavaScript, SQL 
+Frameworks: React, FastAPI, LangChain, LlamaIndex, REST APIs, CrewAI 
+Tools: Git, Linux, PostgreSQL, VS Code, Tavily API, BrowserUse, FAISS 
+ 
+EXPERIENCE 
+ 
+AI/LLM Engineering Intern, Jio Platforms Limited (In Progress) 
+6/19/2026-9/18/2026 
+○ Architected and developed a modular AI framework integrating Groq LLMs, CrewAI, Retrieval-Augmented Generation 
+(RAG), and the Model Context Protocol (MCP) for intelligent task orchestration. (GitHub Link: AI Framework) 
+○ Designed an LLM-powered routing system to classify user requests and dynamically dispatch them to general LLM 
+reasoning, RAG pipelines, or CrewAI workflows featuring Google calendar and Gmail capabilities. 
+○ Built an advanced RAG pipeline using LlamaIndex and FAISS, incorporating history-aware query rewriting, multi-query 
+generation, Maximal Marginal Relevance (MMR) retrieval, Reciprocal Rank Fusion (RRF), and reranking to improve 
+retrieval quality. 
+○ Implemented CrewAI workflows for multi-agent collaboration and explored MCP client/server integration to connect 
+LLMs with external tools and services. 
+○ Applied modular software architecture principles, separating routing, retrieval, LLM communication, agent orchestration, 
+and tool integration into reusable components. 
+ 
+PROJECTS 
+ 
+‘ClubLens’ – AI Powered Decision Platform (1st Prize, TransferHacks @UCSD). 
+4/8/2026-4/11/2026 
+○ Built ClubLens (Github Link: ClubLens ), an AI-powered full-stack platform (1st Prize, TransferHacks @ UCSD) using 
+React, TypeScript, FastAPI, Tailwind CSS, and shadcn/ui for automated student club discovery and fit analysis. 
+○ Developed an automated scraping pipeline with BrowserUse and Tavily APIs, integrating Llama 3.3 70B LLM for resume 
+parsing, AI-based fit scoring, strengths/weaknesses analysis, and interview talking points. 
+○ Engineered scalable REST APIs, concurrent data-processing workflows, and JSON-based caching, following Git and 
+Agile practices to support efficient multi-club analysis. 
+‘LockedTheForeverIn’ – AI Academic Assistant Platform 
+4/4/2026- 4/6/2026 
+○ Built an AI-powered academic assistant ( Github Link: LockedTFIn )integrating multiple data sources (WebReg, 
+Canvas, Gradescope) using automated web agents for real-time data extraction. 
+○ Implemented a natural language chatbot to query schedules, assignments, and emails by leveraging browser- based 
+AI workflows. 
+○ Addressed challenges in agent reliability, 2FA authentication, and rate-limited environments to improve 
+robustness of AI-driven automation. 
+○ Transformed unstructured academic data into actionable insights, improving planning efficiency and reducing 
+cognitive load. 
+Knight Runner Unity Video Game 
+6/1/2021 - 9/30/2021 
+○ Developed and launched an endless-runner game with procedural terrain, multi-season levels, and 
+interactive obstacles. Designed the UI ,animations, and health/coin systems on Unity. Download: link 

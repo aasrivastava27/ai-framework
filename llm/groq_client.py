@@ -2,8 +2,6 @@ from groq import Groq
 
 from config.settings import settings
 from prompts.router_prompt import ROUTER_SYSTEM_PROMPT
-
-from prompts.router_prompt import ROUTER_SYSTEM_PROMPT
 from prompts.router_prompt import WORKSPACE_ROUTER_SYSTEM_PROMPT
 
 class GroqClient:
@@ -92,108 +90,181 @@ class GroqClient:
             {
                 "role": "system",
                 "content": """
-You are an execution planner for an AI framework.
+    You are an execution planner for an AI framework.
 
-Determine the minimum sequence of pipelines required to
-fulfill the user's request.
+    Determine the minimum sequence of pipelines required to
+    fulfill the user's request.
 
-Available pipelines:
+    Available pipelines:
 
-LLM
-- General reasoning, conversation, summarization,
-  extraction, transformation, or explanation.
+    LLM
+    - General reasoning, conversation, summarization,
+    extraction, transformation, or explanation.
 
-RAG
-- Answer questions using the framework's knowledge base.
+    RAG
+    - Answer questions using documents uploaded by the user
+    into the AI Framework's RAG document area.
+    - Use RAG when the user asks about information contained
+    in their uploaded files, uploaded documents, provided
+    files, provided documents, or knowledge base.
+    - Phrases such as:
+        "from my uploaded files"
+        "from my provided files"
+        "according to my files"
+        "according to my documents"
+        "in my uploaded documents"
+        "based on my files"
+        "search my documents"
+    mean RAG.
+    - RAG is NOT Google Drive.
 
-CREW
-- Perform Google Workspace actions.
+    CREW
+    - Perform Google Workspace actions.
 
-For CREW, available workspace services are:
-GMAIL
-CALENDAR
-DRIVE
-DOCS
+    For CREW, available workspace services are:
 
-IMPORTANT:
+    GMAIL
+    CALENDAR
+    DRIVE
+    DOCS
 
-Return exactly ONE line for each actual action that must
-be performed.
+    IMPORTANT DISTINCTION:
 
-Do NOT return intermediate reasoning.
+    The user's uploaded RAG documents are NOT Google Drive files.
 
-Do NOT return duplicate steps.
+    If the user asks you to ANSWER something using their
+    uploaded/provided documents, use:
 
-If a single action is enough, return exactly ONE line.
+    PIPELINE:RAG
 
-Return ONLY this format:
+    Do NOT use:
 
-PIPELINE:LLM
+    PIPELINE:CREW,WORKSPACE:DRIVE
 
-or:
+    unless the user explicitly asks to access, search, create,
+    modify, or otherwise operate on files in their Google Drive.
 
-PIPELINE:RAG
+    Return exactly ONE line for each actual action that must
+    be performed.
 
-or:
+    Do NOT return intermediate reasoning.
 
-PIPELINE:CREW,WORKSPACE:GMAIL
+    Do NOT return duplicate steps.
 
-or:
+    If a single action is enough, return exactly ONE line.
 
-PIPELINE:CREW,WORKSPACE:CALENDAR
+    Return ONLY this format:
 
-or:
+    PIPELINE:LLM
 
-PIPELINE:CREW,WORKSPACE:DRIVE
+    or:
 
-or:
+    PIPELINE:RAG
 
-PIPELINE:CREW,WORKSPACE:DOCS
+    or:
 
-Examples:
+    PIPELINE:CREW,WORKSPACE:GMAIL
 
-User:
-"Rename my calendar event 'Meeting' to 'Project Meeting'."
+    or:
 
-Output:
-PIPELINE:CREW,WORKSPACE:CALENDAR
+    PIPELINE:CREW,WORKSPACE:CALENDAR
 
-User:
-"Send an email to John saying the meeting is cancelled."
+    or:
 
-Output:
-PIPELINE:CREW,WORKSPACE:GMAIL
+    PIPELINE:CREW,WORKSPACE:DRIVE
 
-User:
-"Explain quantum entanglement."
+    or:
 
-Output:
-PIPELINE:LLM
+    PIPELINE:CREW,WORKSPACE:DOCS
 
-User:
-"Search my knowledge base for information about quantum computing."
 
-Output:
-PIPELINE:RAG
+    Examples:
 
-User:
-"Find my latest email from John and summarize it."
+    User:
+    "Rename my calendar event 'Meeting' to 'Project Meeting'."
 
-Output:
-PIPELINE:CREW,WORKSPACE:GMAIL
-PIPELINE:LLM
+    Output:
+    PIPELINE:CREW,WORKSPACE:CALENDAR
 
-User:
-"Find my email from John about the deadline and create a
-calendar event using the deadline mentioned in that email."
 
-Output:
-PIPELINE:CREW,WORKSPACE:GMAIL
-PIPELINE:LLM
-PIPELINE:CREW,WORKSPACE:CALENDAR
+    User:
+    "Send an email to John saying the meeting is cancelled."
 
-Return ONLY the plan.
-""",
+    Output:
+    PIPELINE:CREW,WORKSPACE:GMAIL
+
+
+    User:
+    "Explain quantum entanglement."
+
+    Output:
+    PIPELINE:LLM
+
+
+    User:
+    "What does my uploaded document say about quantum computing?"
+
+    Output:
+    PIPELINE:RAG
+
+
+    User:
+    "Tell me about the relationship between software
+    engineering and AI engineering from my provided files."
+
+    Output:
+    PIPELINE:RAG
+
+
+    User:
+    "What projects are mentioned in my uploaded files?"
+
+    Output:
+    PIPELINE:RAG
+
+
+    User:
+    "Search my knowledge base for information about
+    quantum computing."
+
+    Output:
+    PIPELINE:RAG
+
+
+    User:
+    "Find my latest email from John and summarize it."
+
+    Output:
+    PIPELINE:CREW,WORKSPACE:GMAIL
+    PIPELINE:LLM
+
+
+    User:
+    "Find my email from John about the deadline and create a
+    calendar event using the deadline mentioned in that email."
+
+    Output:
+    PIPELINE:CREW,WORKSPACE:GMAIL
+    PIPELINE:LLM
+    PIPELINE:CREW,WORKSPACE:CALENDAR
+
+
+    User:
+    "Find the file called report.pdf in my Google Drive."
+
+    Output:
+    PIPELINE:CREW,WORKSPACE:DRIVE
+
+
+    User:
+    "Create a Google Doc containing my meeting notes."
+
+    Output:
+    PIPELINE:CREW,WORKSPACE:DOCS
+
+
+    Return ONLY the plan.
+    """,
             },
             {
                 "role": "user",
