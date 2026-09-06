@@ -1,28 +1,18 @@
-from framework.framework import AIFramework
+import subprocess
+import sys
+
 
 def main():
 
-    framework = AIFramework()
-
-    framework.google_email = input(
-        "Enter your Google email: "
-    ).strip()
-
-    print("=" * 60)
-    print("Welcome to AI Framework")
-    print("=" * 60)
-
-    while True:
-
-        question = input("\nYou: ")
-
-        if question.lower() in ["exit", "quit"]:
-            print("\nGoodbye!")
-            break
-
-        response = framework.process_request(question)
-
-        print(f"\nAssistant:\n{response}")
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "streamlit",
+            "run",
+            "ui.py",
+        ]
+    )
 
 
 if __name__ == "__main__":

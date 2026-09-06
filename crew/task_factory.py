@@ -20,7 +20,7 @@ User request:
 {user_prompt}
 
 Rules:
-- Use Workspace tools when the request requires Gmail or Calendar data/action.
+- Use Workspace tools when the request requires external data or an action.
 - Never invent information.
 - Never claim an action succeeded unless the tool confirms it.
 - Use the user's email whenever required.
@@ -67,6 +67,47 @@ Calendar:
 
 - Never claim the update succeeded unless
   Update Calendar Event confirms success.
+
+Maps:
+
+- Use Maps tools for location, route, distance, and nearby-place requests.
+- Use Geocode Location when the user needs a location identified.
+- Use Get Route when the user asks for directions or a route.
+- Use Get Distance when the user asks how far one location is from another.
+- Use Find Nearby Places when the user asks for nearby restaurants,
+  cafes, hospitals, hotels, pharmacies, or other places.
+- Use Get Place Details when detailed information about a specific
+  OpenStreetMap place is required.
+
+- For a chained Maps request, a previous pipeline result may
+  be provided in the user request.
+
+- When using a place returned by a previous Maps operation,
+  prefer the exact latitude and longitude from that result.
+
+- If latitude and longitude are available, pass them to the
+  routing tool instead of routing using only the place name.
+
+- Never substitute a different place with the same name.
+
+- Never invent Maps information.
+- Use the actual tool result as the source of truth.
+- The current task may be one step in a larger multi-step workflow.
+
+- If the current task references the result of a previous step,
+  use that previous result as input.
+
+- Do ONLY the current task. Do not perform tasks that belong
+  to later steps.
+
+- If a previous Maps result contains a place with exact
+  latitude and longitude, use those coordinates for subsequent
+  Maps operations.
+
+- Never resolve an ambiguous place name again when exact
+  coordinates are already available.
+
+- Never substitute another place with the same name.
 """,
 
             expected_output=(

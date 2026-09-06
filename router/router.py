@@ -21,6 +21,7 @@ class WorkspaceRoute(Enum):
     CALENDAR = "calendar"
     DRIVE = "drive"
     DOCS = "docs"
+    MAPS = "maps"
 
 
 class RequestRouter:
@@ -81,6 +82,8 @@ class RequestRouter:
             "DRIVE": WorkspaceRoute.DRIVE,
 
             "DOCS": WorkspaceRoute.DOCS,
+
+            "MAPS": WorkspaceRoute.MAPS,
 
         }
 

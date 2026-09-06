@@ -16,6 +16,13 @@ from crew.tools.calendar_tools import (
     UpdateCalendarEventTool,
 )
 
+from crew.tools.maps_tools import (
+    GeocodeLocationTool,
+    GetRouteTool,
+    GetDistanceTool,
+    FindNearbyPlacesTool,
+    GetPlaceDetailsTool,
+)
 from crew.tools.time_tools import CurrentDateTimeTool
 
 
@@ -100,3 +107,44 @@ class AgentFactory:
 
             verbose=True,
         )
+    
+    
+    def create_maps_agent(self):
+
+        return Agent(
+            role="Maps Assistant",
+
+            goal=(
+                "Help users with location searches, routes, "
+                "distances, and nearby places accurately."
+            ),
+
+            backstory=(
+                "You are a maps and navigation assistant. "
+                "You have access to OpenStreetMap through the "
+                "provided Maps tools. "
+
+                "Use the Maps tools whenever the user asks about "
+                "locations, routes, distances, or nearby places. "
+
+                "Never invent locations, distances, routes, "
+                "places, or travel information. "
+
+                "Use the tool results as the source of truth. "
+                "If the user specifies a travel mode, use it. "
+                "Otherwise, use car routing by default."
+            ),
+
+            llm=llm,
+
+            tools=[
+                GeocodeLocationTool(),
+                GetRouteTool(),
+                GetDistanceTool(),
+                FindNearbyPlacesTool(),
+                GetPlaceDetailsTool(),
+            ],
+
+            verbose=True,
+        )
+

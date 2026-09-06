@@ -10,6 +10,8 @@ class Route(Enum):
     CALENDAR = "calendar"
     DRIVE = "drive"
     DOCS = "docs"
+    MAPS = "maps"
+
 
 
 class CrewManager:
@@ -32,6 +34,8 @@ class CrewManager:
         elif route == Route.GMAIL:
             return self._run_gmail(question, google_email)
 
+        elif route == Route.MAPS:
+            return self._run_maps(question, google_email)
         else:
             raise ValueError(f"Unsupported crew route: {route}")
 
@@ -80,3 +84,27 @@ class CrewManager:
         )
 
         return str(crew.kickoff())
+    
+    # ---------------------------------------------------------
+    # Maps
+    # ---------------------------------------------------------
+
+    def _run_maps(self, question: str, google_email: str):
+
+        agent = self.agent_factory.create_maps_agent()
+
+        task = self.task_factory.create_workspace_task(
+            agent=agent,
+            user_prompt=question,
+            google_email=google_email,
+        )
+
+        crew = Crew(
+            agents=[agent],
+            tasks=[task],
+            process=Process.sequential,
+            verbose=True,
+        )
+
+        return str(crew.kickoff())
+

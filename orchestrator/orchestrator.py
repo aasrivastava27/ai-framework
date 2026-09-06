@@ -71,7 +71,13 @@ class Orchestrator:
         current_result = question
         original_question = question
 
-        for step in steps:
+        for step_number, step in enumerate(steps):
+
+            print(
+                f"[DEBUG] Executing step {step_number + 1}/{len(steps)}: "
+                f"{step.pipeline}"
+                f"{f', workspace={step.workspace}' if step.workspace else ''}"
+            )
 
             if (
                 step.pipeline == "llm"
@@ -112,6 +118,8 @@ Do not invent information.
                     question=current_result,
                     original_question=original_question,
                     google_email=google_email,
+                    step_number=step_number,
+                    total_steps=len(steps),
                 )
 
         if current_result is None:
@@ -131,6 +139,8 @@ Do not invent information.
         question: str,
         original_question: str,
         google_email: str,
+        step_number: int = 0,
+        total_steps: int = 1,
     ) -> str:
 
         # ---------------------------------------------
@@ -216,12 +226,55 @@ Do not invent information.
 
             print(
                 f"[DEBUG] Executing CREW step "
+                f"{step_number + 1}/{total_steps} "
                 f"(workspace={step.workspace})"
             )
 
+            if step.task:
+
+                if step_number == 0:
+
+                    crew_question = step.task
+
+                else:
+
+                    crew_question = f"""
+Original user request:
+{original_question}
+
+Current step:
+{step.task}
+
+Result from the previous step:
+{question}
+
+Use the previous step result as input for the current step.
+
+Perform ONLY the current step.
+
+Do not repeat the previous step.
+
+If the previous Maps result contains a place with latitude
+and longitude, use those exact coordinates for the current
+Maps operation.
+
+Do not use only a place name when exact coordinates are
+available.
+
+Do not substitute another place with the same name.
+
+Do not invent information.
+"""
+
+            else:
+
+                # Backward-compatible behavior for any step
+                # that does not have an explicit task.
+                crew_question = question
+
             result = self.crew.run(
                 route=step.workspace,
-                question=question,
+                question=crew_question,
                 google_email=google_email,
             )
 
@@ -230,8 +283,4 @@ Do not invent information.
             print("[DEBUG] END CREW RESULT\n")
 
             return result
-
-        raise RuntimeError(
-            f"Unknown pipeline: {step.pipeline}"
-        )
 

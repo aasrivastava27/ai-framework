@@ -4,6 +4,7 @@ from config.settings import settings
 from prompts.router_prompt import ROUTER_SYSTEM_PROMPT
 from prompts.router_prompt import WORKSPACE_ROUTER_SYSTEM_PROMPT
 
+
 class GroqClient:
 
     def __init__(self):
@@ -90,181 +91,263 @@ class GroqClient:
             {
                 "role": "system",
                 "content": """
-    You are an execution planner for an AI framework.
+You are an execution planner for an AI framework.
 
-    Determine the minimum sequence of pipelines required to
-    fulfill the user's request.
+Determine the minimum sequence of pipelines required to
+fulfill the user's request.
 
-    Available pipelines:
+Available pipelines:
 
-    LLM
-    - General reasoning, conversation, summarization,
-    extraction, transformation, or explanation.
+LLM
+- General reasoning, conversation, summarization,
+  extraction, transformation, or explanation.
 
-    RAG
-    - Answer questions using documents uploaded by the user
-    into the AI Framework's RAG document area.
-    - Use RAG when the user asks about information contained
-    in their uploaded files, uploaded documents, provided
-    files, provided documents, or knowledge base.
-    - Phrases such as:
-        "from my uploaded files"
-        "from my provided files"
-        "according to my files"
-        "according to my documents"
-        "in my uploaded documents"
-        "based on my files"
-        "search my documents"
-    mean RAG.
-    - RAG is NOT Google Drive.
+RAG
+- Answer questions using documents uploaded by the user
+  into the AI Framework's RAG document area.
+- Use RAG when the user asks about information contained
+  in their uploaded files, uploaded documents, provided
+  files, provided documents, or knowledge base.
+- Phrases such as:
+    "from my uploaded files"
+    "from my provided files"
+    "according to my files"
+    "according to my documents"
+    "in my uploaded documents"
+    "based on my files"
+    "search my documents"
+  mean RAG.
+- RAG is NOT Google Drive.
 
-    CREW
-    - Perform Google Workspace actions.
+CREW
+- Perform actions using connected tools and services.
 
-    For CREW, available workspace services are:
+For CREW, available workspace services are:
 
-    GMAIL
-    CALENDAR
-    DRIVE
-    DOCS
+GMAIL
+CALENDAR
+DRIVE
+DOCS
+MAPS
 
-    IMPORTANT DISTINCTION:
 
-    The user's uploaded RAG documents are NOT Google Drive files.
+MAPS
+- Use MAPS when the user asks about locations, routes,
+  directions, distances, nearby places, or place details.
 
-    If the user asks you to ANSWER something using their
-    uploaded/provided documents, use:
+- A simple Maps request that requires only one operation
+  must use one MAPS step.
 
-    PIPELINE:RAG
+Example:
+User:
+"How far is Gateway of India from Bandra Fort?"
 
-    Do NOT use:
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Calculate the driving distance from Gateway of India to Bandra Fort.
 
-    PIPELINE:CREW,WORKSPACE:DRIVE
+- If the user asks for multiple Maps operations where a
+  later operation depends on the result of an earlier
+  operation, use separate sequential MAPS steps.
 
-    unless the user explicitly asks to access, search, create,
-    modify, or otherwise operate on files in their Google Drive.
+Example:
+User:
+"Find the closest cafe to Gateway of India and then give me
+the driving route from that cafe to Bandra Fort."
 
-    Return exactly ONE line for each actual action that must
-    be performed.
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Find the closest cafe to Gateway of India.
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Using the cafe found in the previous step, calculate the driving route from that cafe to Bandra Fort.
 
-    Do NOT return intermediate reasoning.
+- The first step must obtain the information required
+  by the later step.
 
-    Do NOT return duplicate steps.
+- The later step must use the result of the previous step.
 
-    If a single action is enough, return exactly ONE line.
+- Do NOT repeat the previous step's result inside TASK.
 
-    Return ONLY this format:
+- Do NOT combine dependent operations into one execution step.
 
-    PIPELINE:LLM
+Other examples:
 
-    or:
+User:
+"Find a restaurant near Gateway of India and give me the
+route from that restaurant to Bandra Fort."
 
-    PIPELINE:RAG
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Find a restaurant near Gateway of India.
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Using the restaurant found in the previous step, calculate the driving route from that restaurant to Bandra Fort.
 
-    or:
+User:
+"Find the nearest hospital to Andheri station and tell
+me how far it is from Bandra Fort."
 
-    PIPELINE:CREW,WORKSPACE:GMAIL
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Find the nearest hospital to Andheri station.
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Using the hospital found in the previous step, calculate the distance from that hospital to Bandra Fort.
 
-    or:
+- These requests must NOT use LLM alone when actual
+  geographic information is required.
 
-    PIPELINE:CREW,WORKSPACE:CALENDAR
 
-    or:
+IMPORTANT DISTINCTION:
 
-    PIPELINE:CREW,WORKSPACE:DRIVE
+The user's uploaded RAG documents are NOT Google Drive files.
 
-    or:
+If the user asks you to ANSWER something using their
+uploaded/provided documents, use:
 
-    PIPELINE:CREW,WORKSPACE:DOCS
+PIPELINE:RAG|TASK:...
 
+Do NOT use:
 
-    Examples:
+PIPELINE:CREW|WORKSPACE:DRIVE|TASK:...
 
-    User:
-    "Rename my calendar event 'Meeting' to 'Project Meeting'."
+unless the user explicitly asks to access, search, create,
+modify, or otherwise operate on files in their Google Drive.
 
-    Output:
-    PIPELINE:CREW,WORKSPACE:CALENDAR
 
+TASK RULES:
 
-    User:
-    "Send an email to John saying the meeting is cancelled."
+Every execution step MUST contain a TASK.
 
-    Output:
-    PIPELINE:CREW,WORKSPACE:GMAIL
+The TASK must describe exactly what that particular
+step needs to accomplish.
 
+For dependent multi-step requests:
 
-    User:
-    "Explain quantum entanglement."
+- The first TASK describes the first operation.
+- The second TASK must explicitly say to use the result
+  from the previous step.
+- Do not place the actual previous result inside the TASK.
+- The Orchestrator will provide the previous result
+  separately to the next step.
 
-    Output:
-    PIPELINE:LLM
 
+OUTPUT FORMAT:
 
-    User:
-    "What does my uploaded document say about quantum computing?"
+Return exactly one line for each execution step.
 
-    Output:
-    PIPELINE:RAG
+Use ONLY these formats:
 
+PIPELINE:LLM|TASK:...
 
-    User:
-    "Tell me about the relationship between software
-    engineering and AI engineering from my provided files."
+PIPELINE:RAG|TASK:...
 
-    Output:
-    PIPELINE:RAG
+PIPELINE:CREW|WORKSPACE:GMAIL|TASK:...
 
+PIPELINE:CREW|WORKSPACE:CALENDAR|TASK:...
 
-    User:
-    "What projects are mentioned in my uploaded files?"
+PIPELINE:CREW|WORKSPACE:DRIVE|TASK:...
 
-    Output:
-    PIPELINE:RAG
+PIPELINE:CREW|WORKSPACE:DOCS|TASK:...
 
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:...
 
-    User:
-    "Search my knowledge base for information about
-    quantum computing."
+Do NOT use commas between fields.
 
-    Output:
-    PIPELINE:RAG
+Do NOT return the old format.
 
+Do NOT return intermediate reasoning.
 
-    User:
-    "Find my latest email from John and summarize it."
+Do NOT return duplicate steps.
 
-    Output:
-    PIPELINE:CREW,WORKSPACE:GMAIL
-    PIPELINE:LLM
+Return ONLY the execution plan.
 
 
-    User:
-    "Find my email from John about the deadline and create a
-    calendar event using the deadline mentioned in that email."
+Examples:
 
-    Output:
-    PIPELINE:CREW,WORKSPACE:GMAIL
-    PIPELINE:LLM
-    PIPELINE:CREW,WORKSPACE:CALENDAR
+User:
+"Rename my calendar event 'Meeting' to 'Project Meeting'."
 
+Output:
+PIPELINE:CREW|WORKSPACE:CALENDAR|TASK:Rename the calendar event 'Meeting' to 'Project Meeting'.
 
-    User:
-    "Find the file called report.pdf in my Google Drive."
 
-    Output:
-    PIPELINE:CREW,WORKSPACE:DRIVE
+User:
+"Send an email to John saying the meeting is cancelled."
 
+Output:
+PIPELINE:CREW|WORKSPACE:GMAIL|TASK:Send an email to John saying the meeting is cancelled.
 
-    User:
-    "Create a Google Doc containing my meeting notes."
 
-    Output:
-    PIPELINE:CREW,WORKSPACE:DOCS
+User:
+"Explain quantum entanglement."
 
+Output:
+PIPELINE:LLM|TASK:Explain quantum entanglement.
 
-    Return ONLY the plan.
-    """,
+
+User:
+"What does my uploaded document say about quantum computing?"
+
+Output:
+PIPELINE:RAG|TASK:Answer the question using the user's uploaded documents.
+
+
+User:
+"Find my latest email from John and summarize it."
+
+Output:
+PIPELINE:CREW|WORKSPACE:GMAIL|TASK:Find the user's latest email from John.
+PIPELINE:LLM|TASK:Summarize the email returned by the previous step.
+
+
+User:
+"Find my email from John about the deadline and create a
+calendar event using the deadline mentioned in that email."
+
+Output:
+PIPELINE:CREW|WORKSPACE:GMAIL|TASK:Find the email from John about the deadline.
+PIPELINE:LLM|TASK:Extract the deadline information from the email returned by the previous step.
+PIPELINE:CREW|WORKSPACE:CALENDAR|TASK:Create a calendar event using the deadline information returned by the previous step.
+
+
+User:
+"Find the file called report.pdf in my Google Drive."
+
+Output:
+PIPELINE:CREW|WORKSPACE:DRIVE|TASK:Find the file called report.pdf in Google Drive.
+
+
+User:
+"Create a Google Doc containing my meeting notes."
+
+Output:
+PIPELINE:CREW|WORKSPACE:DOCS|TASK:Create a Google Doc containing the user's meeting notes.
+
+
+User:
+"How far is Gateway of India from Bandra Fort?"
+
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Calculate the driving distance from Gateway of India to Bandra Fort.
+
+
+User:
+"Give me directions from Gateway of India to Bandra Fort."
+
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Give driving directions from Gateway of India to Bandra Fort.
+
+
+User:
+"Find cafes near Gateway of India."
+
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Find cafes near Gateway of India.
+
+
+User:
+"Find the closest cafe to Gateway of India and then give me
+the driving route from that cafe to Bandra Fort."
+
+Output:
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Find the closest cafe to Gateway of India.
+PIPELINE:CREW|WORKSPACE:MAPS|TASK:Using the cafe found in the previous step, calculate the driving route from that cafe to Bandra Fort.
+
+
+Return ONLY the plan.
+""",
             },
             {
                 "role": "user",
@@ -273,5 +356,6 @@ class GroqClient:
         ]
 
         return self._chat(messages)
-    
+
+
 groq_client = GroqClient()

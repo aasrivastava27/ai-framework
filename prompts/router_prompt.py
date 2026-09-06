@@ -87,6 +87,7 @@ GMAIL
 CALENDAR
 DRIVE
 DOCS
+MAPS
 
 Return ONLY the service name.
 Do not explain your answer.
@@ -110,6 +111,20 @@ IMPORTANT RULES:
 
 6. If the request involves Google Docs,
    choose DOCS.
+
+7. If the request involves locations, routes, directions,
+   distances, nearby places, restaurants, cafes, hospitals,
+   hotels, pharmacies, or other geographic information,
+   choose MAPS.
+
+8. If the user asks how to get from one location to another,
+   choose MAPS.
+
+9. If the user asks how far one location is from another,
+   choose MAPS.
+
+10. If the user asks to find places near a location,
+    choose MAPS.
 
 
 Examples:
@@ -150,6 +165,21 @@ Examples:
 "Create a Google Doc"
 -> DOCS
 
+"How far is Gateway of India from Bandra Fort?"
+-> MAPS
+
+"Give me directions from Mumbai Airport to Gateway of India"
+-> MAPS
+
+"Find cafes near Gateway of India"
+-> MAPS
+
+"Find hospitals near Bandra"
+-> MAPS
+
+"What's the route from Powai to Andheri?"
+-> MAPS
+
 Return ONLY:
 
 GMAIL
@@ -165,4 +195,8 @@ DRIVE
 or
 
 DOCS
+
+or 
+
+MAPS
 """
