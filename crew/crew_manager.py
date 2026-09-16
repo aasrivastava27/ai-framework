@@ -11,6 +11,7 @@ class Route(Enum):
     DRIVE = "drive"
     DOCS = "docs"
     MAPS = "maps"
+    DATA = "data"
 
 
 
@@ -36,6 +37,8 @@ class CrewManager:
 
         elif route == Route.MAPS:
             return self._run_maps(question, google_email)
+        elif route == Route.DATA:
+            return self._run_data(question, google_email)
         else:
             raise ValueError(f"Unsupported crew route: {route}")
 
@@ -107,4 +110,28 @@ class CrewManager:
         )
 
         return str(crew.kickoff())
+    
+    # ---------------------------------------------------------
+    # Data / CSV
+    # ---------------------------------------------------------
+
+    def _run_data(self, question: str, google_email: str):
+
+        agent = self.agent_factory.create_data_agent()
+
+        task = self.task_factory.create_data_task(
+            agent=agent,
+            user_prompt=question,
+            google_email=google_email,
+        )
+
+        crew = Crew(
+            agents=[agent],
+            tasks=[task],
+            process=Process.sequential,
+            verbose=True,
+        )
+
+        return str(crew.kickoff())
+
 

@@ -1,0 +1,6 @@
+"name,department,salary,age",name,department,salary,age
+"Alice,Engineering,120000,24",Alice,Engineering,120000,24
+"Bob,Engineering,110000,27",Bob,Engineering,110000,27
+"Charlie,HR,80000,31",Charlie,HR,80000,31
+"David,HR,90000,29",David,HR,90000,29
+"Emma,Engineering,130000,26",Emma,Engineering,130000,26

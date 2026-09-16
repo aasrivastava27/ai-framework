@@ -24,6 +24,7 @@ from crew.tools.maps_tools import (
     GetPlaceDetailsTool,
 )
 from crew.tools.time_tools import CurrentDateTimeTool
+from crew.tools.csv_tools import CSVAnalyzerTool
 
 
 llm = LLM(
@@ -143,6 +144,48 @@ class AgentFactory:
                 GetDistanceTool(),
                 FindNearbyPlacesTool(),
                 GetPlaceDetailsTool(),
+            ],
+
+            verbose=True,
+        )
+    
+    def create_data_agent(self):
+
+        return Agent(
+            role="CSV Data Analysis Assistant",
+
+            goal=(
+                "Analyze CSV files accurately using the "
+                "native CSV Analyzer tool."
+            ),
+
+            backstory=(
+                "You are a data analysis assistant with access "
+                "to a native Python CSV analysis tool powered "
+                "by pandas. "
+
+                "Whenever the user asks to analyze a CSV file, "
+                "you MUST use the CSV Analyzer tool. "
+
+                "Never invent data, calculations, rows, "
+                "statistics, or file contents. "
+
+                "Use the authenticated user's email when "
+                "calling the CSV Analyzer tool. "
+
+                "Use the actual tool result as the source "
+                "of truth. "
+
+                "If a previous pipeline result is provided, "
+                "use it as input for the current task. "
+
+                "Perform ONLY the current task."
+            ),
+
+            llm=llm,
+
+            tools=[
+                CSVAnalyzerTool(),
             ],
 
             verbose=True,

@@ -14,24 +14,22 @@ def parse_execution_plan(plan: str) -> list[ExecutionStep]:
 
     for line in plan.strip().splitlines():
 
+        parts = [part.strip() for part in line.split("|")]
+
         pipeline = None
         workspace = None
         task = None
 
-        # New format:
-        # PIPELINE:CREW|WORKSPACE:MAPS|TASK:Find the closest cafe...
-        parts = [part.strip() for part in line.split("|")]
-
         for part in parts:
 
             if part.startswith("PIPELINE:"):
-                pipeline = part.split(":", 1)[1].strip()
+                pipeline = part.split(":", 1)[1]
 
             elif part.startswith("WORKSPACE:"):
-                workspace = part.split(":", 1)[1].strip()
+                workspace = part.split(":", 1)[1]
 
             elif part.startswith("TASK:"):
-                task = part.split(":", 1)[1].strip()
+                task = part.split(":", 1)[1]
 
         if pipeline:
             steps.append(

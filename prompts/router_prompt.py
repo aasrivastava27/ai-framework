@@ -88,6 +88,7 @@ CALENDAR
 DRIVE
 DOCS
 MAPS
+DATA
 
 Return ONLY the service name.
 Do not explain your answer.
@@ -125,6 +126,12 @@ IMPORTANT RULES:
 
 10. If the user asks to find places near a location,
     choose MAPS.
+   
+11. If the request involves analyzing a CSV file,
+    calculating statistics from CSV data, filtering CSV data,
+    grouping CSV data, finding averages, counts, minimums,
+    maximums, duplicates, or missing values in a CSV,
+    choose DATA.
 
 
 Examples:
@@ -180,6 +187,21 @@ Examples:
 "What's the route from Powai to Andheri?"
 -> MAPS
 
+"Analyze employees.csv"
+-> DATA
+
+"Find the average salary in employees.csv"
+-> DATA
+
+"Which department has the highest average salary?"
+-> DATA
+
+"Find missing values in sales.csv"
+-> DATA
+
+"How many duplicate rows are in this CSV?"
+-> DATA
+
 Return ONLY:
 
 GMAIL
@@ -199,4 +221,8 @@ DOCS
 or 
 
 MAPS
+
+or
+
+DATA
 """
